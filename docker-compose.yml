@@ -1,0 +1,38 @@
+version: '3.9'
+
+services:
+  db:
+    image: postgres:16
+    restart: always
+    environment:
+      POSTGRES_DB: lichen
+      POSTGRES_USER: lichen
+      POSTGRES_PASSWORD: lichenpass
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:7-alpine
+    restart: always
+    ports:
+      - "6379:6379"
+
+  api:
+    build: .
+    restart: always
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+      - redis
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://lichen:lichenpass@db:5432/lichen
+      - REDIS_URL=redis://redis:6379/0
+      - SECRET_KEY=super-secret-key-change-me-in-prod
+      - ACCESS_TOKEN_EXPIRE_MINUTES=15
+
+volumes:
+  postgres_data:
